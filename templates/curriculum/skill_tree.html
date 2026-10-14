@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}Matriz Neuronal de Habilidades | CodeQuest{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-8">
+
+    <!-- Encabezado y Medallero -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8 bg-slate-900/90 border border-slate-800 rounded-2xl p-6">
+        <div>
+            <span class="text-xs font-mono-code uppercase px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                Plan de Estudios Estructurado
+            </span>
+            <h1 class="text-2xl sm:text-3xl font-bold text-white mt-2">Matriz Neuronal de Ingeniería de Software</h1>
+            <p class="text-slate-400 text-sm mt-1">
+                Consulta la base teórica de cada módulo (CU-03) antes de iniciar los retos de evaluación interactiva (CU-01 y CU-02).
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            {% if insignias_usuario %}
+                {% for item in insignias_usuario %}
+                <div class="flex items-center gap-2 bg-amber-500/10 border border-amber-500/40 px-3.5 py-2 rounded-xl" title="{{ item.id_insignia.descripcion }}">
+                    <span class="text-xl">{{ item.id_insignia.icono }}</span>
+                    <div>
+                        <p class="text-xs font-bold text-amber-300">{{ item.id_insignia.nombre }}</p>
+                        <p class="text-[11px] font-mono-code text-amber-200/70">Insignia Desbloqueada</p>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-xs font-mono-code text-slate-400 bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-xl">
+                    🏆 Completa un reto para desbloquear tu primera insignia virtual.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Alerta para Excepcion 2a de CU-03 (Falla de conexion / Contenido no disponible) -->
+    <div id="teoria-warning-banner" class="hidden mb-6 p-4 rounded-xl bg-amber-950/90 border border-amber-500/60 text-amber-200 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <span class="text-xl">⚠️</span>
+            <div>
+                <p id="teoria-warning-text" class="font-bold text-sm">Contenido no disponible temporalmente</p>
+                <p class="text-xs text-amber-300/80">Excepción 2a (CU-03): El sistema permanece en el menú de selección sin alterar tu progreso.</p>
+            </div>
+        </div>
+        <button onclick="document.getElementById('teoria-warning-banner').classList.add('hidden')" class="text-xs font-mono-code underline">
+            Ocultar
+        </button>
+    </div>
+
+    <!-- Grid de Temas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for tema in temas %}
+        <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-6 flex flex-col justify-between transition">
+            <div>
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl bg-slate-800 w-12 h-12 rounded-xl flex items-center justify-center border border-slate-700">
+                            {{ tema.icono }}
+                        </span>
+                        <div>
+                            <span class="text-xs font-mono-code text-cyan-400">MÓDULO 0{{ tema.orden }}</span>
+                            <h2 class="text-lg font-bold text-white">{{ tema.nombre }}</h2>
+                        </div>
+                    </div>
+
+                    <!-- Boton principal del CU-03 -->
+                    <button
+                        type="button"
+                        onclick="abrirModalTeoria({{ tema.id_tema }}, false)"
+                        class="px-3.5 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-400/40 text-indigo-300 text-xs font-mono-code font-semibold transition shrink-0"
+                    >
+                        📖 Ver Teoría
+                    </button>
+                </div>
+
+                <p class="text-sm text-slate-400 mt-4 leading-relaxed">
+                    {{ tema.descripcion }}
+                </p>
+
+                <!-- Lista de Retos asociados al Tema -->
+                <div class="mt-6 space-y-3">
+                    <p class="text-xs font-mono-code uppercase text-slate-400">Retos Interactivos del Módulo:</p>
+                    {% for reto in tema.retos.all %}
+                        <div class="flex items-center justify-between bg-slate-950 border border-slate-800/90 rounded-xl px-4 py-3">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-mono-code px-2 py-0.5 rounded bg-slate-800 text-cyan-300">
+                                        {{ reto.tipo }}
+                                    </span>
+                                    {% if reto.id_reto in retos_completados_ids %}
+                                    <span class="text-xs font-mono-code px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                        ✔ Completado
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <p class="text-sm font-semibold text-slate-200 mt-1">{{ reto.titulo }}</p>
+                            </div>
+
+                            {% if reto.tipo == 'CLASIFICACION' %}
+                                <a href="{% url 'classification_challenge_view' reto.id_reto %}"
+                                   class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs font-mono-code transition shrink-0">
+                                    Iniciar CU-01 →
+                                </a>
+                            {% else %}
+                                <a href="{% url 'question_challenge_view' reto.id_reto %}"
+                                   class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs font-mono-code transition shrink-0">
+                                    Iniciar CU-02 →
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="text-xs font-mono-code text-slate-500 italic">
+                            Retos prácticos programados para el siguiente incremento. Teoría disponible para consulta.
+                        </p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-5 pt-3 border-t border-slate-800/60 flex items-center justify-between text-[11px] font-mono-code text-slate-500">
+                <span>CU-03: Consultar Teoría del Tema</span>
+                <button
+                    type="button"
+                    onclick="abrirModalTeoria({{ tema.id_tema }}, true)"
+                    class="text-amber-400/80 hover:text-amber-300 underline"
+                    title="Prueba el flujo de Excepción 2a del CU-03"
+                >
+                    Probar Excepción 2a (Falla BD)
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Ventana Modal de Teoria (CU-03 / NF-05 / REQ-USA-02) -->
+<!-- Bloquea el fondo e incluye boton de cierre fijo en la esquina superior derecha independiente del scroll -->
+<div
+    id="modal-teoria-backdrop"
+    class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4"
+>
+    <div
+        id="modal-teoria-dialog"
+        class="relative w-full max-w-3xl max-h-[82vh] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+    >
+        <!-- Encabezado fijo con boton de cierre siempre visible en esquina superior derecha (NF-05) -->
+        <div class="px-6 py-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <div>
+                <span class="text-xs font-mono-code uppercase text-indigo-400">Base de Conocimiento Teórico (CU-03)</span>
+                <h3 id="modal-teoria-titulo" class="text-xl font-bold text-white">Cargando teoría...</h3>
+            </div>
+            <button
+                type="button"
+                id="btn-cerrar-modal-fijo"
+                onclick="cerrarModalTeoria()"
+                class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 border border-slate-700 hover:border-rose-500/40 text-slate-200 hover:text-rose-300 text-xs font-mono-code font-bold transition"
+            >
+                ✕ Cerrar [ESC]
+            </button>
+        </div>
+
+        <!-- Cuerpo desplazable independientemente del boton de cierre (REQ-USA-02) -->
+        <div id="modal-teoria-body" class="p-6 overflow-y-auto space-y-5 text-sm text-slate-300 leading-relaxed">
+        </div>
+
+        <!-- Pie del modal -->
+        <div class="px-6 py-3.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between shrink-0">
+            <span class="text-xs font-mono-code text-slate-500">
+                Puedes cerrar haciendo clic en "Cerrar", fuera de la ventana o presionando Escape.
+            </span>
+            <button
+                type="button"
+                onclick="cerrarModalTeoria()"
+                class="px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-slate-950 font-bold text-xs font-mono-code transition"
+            >
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const modalBackdrop = document.getElementById('modal-teoria-backdrop');
+    const modalDialog = document.getElementById('modal-teoria-dialog');
+    const modalTitulo = document.getElementById('modal-teoria-titulo');
+    const modalBody = document.getElementById('modal-teoria-body');
+    const warningBanner = document.getElementById('teoria-warning-banner');
+    const warningText = document.getElementById('teoria-warning-text');
+
+    async function abrirModalTeoria(idTema, simularError = false) {
+        warningBanner.classList.add('hidden');
+        const url = simularError ? `/api/teoria/${idTema}/?simular_error=1` : `/api/teoria/${idTema}/`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Excepcion 2a CU-03: Muestra advertencia "Contenido no disponible temporalmente"
+                warningText.textContent = data.error || 'Contenido no disponible temporalmente';
+                warningBanner.classList.remove('hidden');
+                return;
+            }
+
+            modalTitulo.textContent = data.nombre_tema;
+            modalBody.innerHTML = data.conceptos.map((concepto) => `
+                <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <h4 class="text-base font-bold text-cyan-400 mb-2">${concepto.titulo_concepto}</h4>
+                    <p class="text-slate-300 text-sm leading-relaxed">${concepto.contenido}</p>
+                </div>
+            `).join('');
+
+            modalBackdrop.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        } catch (error) {
+            warningText.textContent = 'Contenido no disponible temporalmente';
+            warningBanner.classList.remove('hidden');
+        }
+    }
+
+    function cerrarModalTeoria() {
+        modalBackdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    // Flujo alternativo 3a (CU-03): Cerrar al hacer clic fuera de la ventana modal
+    modalBackdrop.addEventListener('click', (event) => {
+        if (!modalDialog.contains(event.target)) {
+            cerrarModalTeoria();
+        }
+    });
+
+    // Flujo alternativo 3a (CU-03): Cerrar al presionar la tecla Escape
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !modalBackdrop.classList.contains('hidden')) {
+            cerrarModalTeoria();
+        }
+    });
+</script>
+{% endblock %}

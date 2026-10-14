@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}{{ reto.titulo }} | CodeQuest{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-6 py-8">
+
+    <!-- Cabecera del Reto CU-02 -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div>
+            <a href="{% url 'skill_tree_view' %}" class="text-xs font-mono-code text-cyan-400 hover:underline">
+                ← Volver a la Matriz Neuronal
+            </a>
+            <h1 class="text-xl sm:text-2xl font-bold text-white mt-1">{{ reto.titulo }}</h1>
+            <p class="text-xs font-mono-code text-slate-400 mt-0.5">
+                Reactivo <span id="pregunta-actual-num">1</span> de <span id="pregunta-total-num">1</span>
+            </p>
+        </div>
+
+        <!-- Temporizador del reto (Flujo alternativo 1a: Expiracion de tiempo sin respuesta) -->
+        <div class="bg-slate-950 border border-slate-800 px-5 py-3 rounded-xl text-center shrink-0">
+            <span class="block text-[11px] font-mono-code uppercase text-slate-400">Tiempo del Reactivo</span>
+            <span id="question-timer-display" class="font-mono-code text-2xl font-bold text-cyan-400">30s</span>
+        </div>
+    </div>
+
+    <!-- Tarjeta Principal de la Pregunta -->
+    <div id="question-card" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 id="question-enunciado" class="text-lg sm:text-xl font-bold text-white leading-relaxed mb-6"></h2>
+
+        <div id="options-container" class="space-y-3"></div>
+
+        <div class="mt-8 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <label class="flex items-center gap-2 text-xs font-mono-code text-amber-400 cursor-pointer">
+                <input type="checkbox" id="chk-simular-excepcion-4a" class="rounded bg-slate-950 border-slate-700">
+                Simular Excepción 4a (Falla de carga de texto teórico / Bitácora)
+            </label>
+
+            <button
+                type="button"
+                id="btn-confirmar-respuesta"
+                onclick="enviarRespuesta(false)"
+                class="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm font-mono-code transition"
+            >
+                Confirmar Respuesta
+            </button>
+        </div>
+    </div>
+
+    <!-- Pantalla Final de Resumen del Reto -->
+    <div id="challenge-completed-card" class="hidden bg-slate-900 border border-emerald-500/40 rounded-2xl p-8 text-center">
+        <div class="text-4xl mb-3">🏆</div>
+        <h2 class="text-2xl font-bold text-white">¡Secuencia de Evaluación Completada!</h2>
+        <p class="text-slate-400 text-sm mt-2">
+            Todas tus respuestas, marcas de tiempo y variaciones de puntaje han sido registradas en PostgreSQL.
+        </p>
+        <a href="{% url 'skill_tree_view' %}" class="inline-block mt-6 px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm font-mono-code transition">
+            Volver a la Matriz Neuronal
+        </a>
+    </div>
+</div>
+
+<!-- Ventana Emergente de Retroalimentacion (CU-02 / NF-01 / Flujo 5a / Excepcion 4a) -->
+<div id="feedback-modal-backdrop" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+        <div id="feedback-modal-header" class="px-6 py-4 border-b flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <span id="feedback-status-icon" class="text-xl"></span>
+                <h3 id="feedback-status-title" class="text-lg font-bold"></h3>
+            </div>
+            <span id="feedback-points-badge" class="font-mono-code text-xs font-bold px-2.5 py-1 rounded"></span>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div>
+                <span class="text-xs font-mono-code uppercase text-slate-400">Explicación Teórica Asociada al Reactivo:</span>
+                <div id="feedback-theory-box" class="mt-2 p-4 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 leading-relaxed">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs font-mono-code text-slate-500">
+                <span id="feedback-timestamp"></span>
+                <span id="feedback-wait-notice" class="text-amber-400"></span>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 bg-slate-950 border-t border-slate-800 flex justify-end">
+            <button
+                type="button"
+                id="btn-modal-continuar"
+                onclick="avanzarSiguientePregunta()"
+                class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold text-xs font-mono-code transition"
+            >
+                Confirmar y Continuar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const preguntas = {{ preguntas_json|safe }};
+    let indiceActual = 0;
+    let opcionSeleccionadaId = null;
+    let intervaloPregunta = null;
+    let intervaloLecturaModal = null;
+    let interfazBloqueada = false;
+
+    document.getElementById('pregunta-total-num').textContent = preguntas.length;
+
+    function renderizarPreguntaActual() {
+        if (indiceActual >= preguntas.length) {
+            document.getElementById('question-card').classList.add('hidden');
+            document.getElementById('challenge-completed-card').classList.remove('hidden');
+            return;
+        }
+
+        interfazBloqueada = false;
+        opcionSeleccionadaId = null;
+        const pregunta = preguntas[indiceActual];
+
+        document.getElementById('pregunta-actual-num').textContent = indiceActual + 1;
+        document.getElementById('question-enunciado').textContent = pregunta.enunciado;
+        document.getElementById('btn-confirmar-respuesta').disabled = false;
+
+        const contenedorOpciones = document.getElementById('options-container');
+        contenedorOpciones.innerHTML = pregunta.opciones.map((op) => `
+            <button
+                type="button"
+                data-id="${op.id_opcion}"
+                onclick="seleccionarOpcion(${op.id_opcion})"
+                class="option-btn w-full text-left p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-500/50 text-sm text-slate-200 transition flex items-center gap-3"
+            >
+                <span class="w-6 h-6 rounded-full border border-slate-600 flex items-center justify-center text-xs font-mono-code shrink-0">
+                    ${op.orden}
+                </span>
+                <span>${op.texto}</span>
+            </button>
+        `).join('');
+
+        iniciarTemporizadorPregunta(pregunta.tiempo_limite_seg);
+    }
+
+    function seleccionarOpcion(idOpcion) {
+        if (interfazBloqueada) return;
+        opcionSeleccionadaId = idOpcion;
+
+        document.querySelectorAll('.option-btn').forEach((btn) => {
+            const esElegida = Number(btn.dataset.id) === idOpcion;
+            btn.className = esElegida
+                ? 'option-btn w-full text-left p-4 rounded-xl bg-cyan-500/15 border-2 border-cyan-400 text-sm text-white font-semibold transition flex items-center gap-3'
+                : 'option-btn w-full text-left p-4 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-300 transition flex items-center gap-3';
+        });
+    }
+
+    function iniciarTemporizadorPregunta(segundosIniciales) {
+        clearInterval(intervaloPregunta);
+        let tiempoRestanteSeg = segundosIniciales;
+        const display = document.getElementById('question-timer-display');
+        display.textContent = `${tiempoRestanteSeg}s`;
+        display.className = 'font-mono-code text-2xl font-bold text-cyan-400';
+
+        intervaloPregunta = setInterval(() => {
+            tiempoRestanteSeg -= 1;
+            display.textContent = `${tiempoRestanteSeg}s`;
+
+            if (tiempoRestanteSeg <= 5) {
+                display.className = 'font-mono-code text-2xl font-bold text-rose-400 animate-pulse';
+            }
+
+            if (tiempoRestanteSeg <= 0) {
+                clearInterval(intervaloPregunta);
+                // Flujo alternativo 1a (CU-02): Expiracion de tiempo asigna Incorrecto por omision
+                enviarRespuesta(true);
+            }
+        }, 1000);
+    }
+
+    async function enviarRespuesta(expiroTiempo = false) {
+        if (interfazBloqueada) return;
+
+        if (!expiroTiempo && opcionSeleccionadaId === null) {
+            alert('Selecciona una opción antes de confirmar.');
+            return;
+        }
+
+        // Paso 3 Flujo Principal CU-02 (REQ-FUNC-02.2): Bloqueo inmediato de acciones en pantalla principal
+        interfazBloqueada = true;
+        clearInterval(intervaloPregunta);
+        document.getElementById('btn-confirmar-respuesta').disabled = true;
+        document.querySelectorAll('.option-btn').forEach((btn) => { btn.disabled = true; });
+
+        const pregunta = preguntas[indiceActual];
+        const simularFallaTeoria = document.getElementById('chk-simular-excepcion-4a').checked;
+
+        const response = await fetch("{% url 'evaluate_question_api' reto.id_reto %}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_pregunta: pregunta.id_pregunta,
+                id_opcion: opcionSeleccionadaId,
+                expiro_tiempo: expiroTiempo,
+                simular_falla_teoria: simularFallaTeoria
+            })
+        });
+
+        const data = await response.json();
+        document.getElementById('header-xp-counter').textContent = data.puntaje_total;
+        mostrarModalRetroalimentacion(data);
+    }
+
+    function mostrarModalRetroalimentacion(data) {
+        const modal = document.getElementById('feedback-modal-backdrop');
+        const header = document.getElementById('feedback-modal-header');
+        const icon = document.getElementById('feedback-status-icon');
+        const title = document.getElementById('feedback-status-title');
+        const badge = document.getElementById('feedback-points-badge');
+        const theoryBox = document.getElementById('feedback-theory-box');
+        const timestampEl = document.getElementById('feedback-timestamp');
+        const waitNotice = document.getElementById('feedback-wait-notice');
+        const btnContinuar = document.getElementById('btn-modal-continuar');
+
+        if (data.es_correcto) {
+            header.className = 'px-6 py-4 border-b border-emerald-500/40 bg-emerald-950/60 flex items-center justify-between';
+            icon.textContent = '✔';
+            title.textContent = 'Respuesta Correcta';
+            title.className = 'text-lg font-bold text-emerald-300';
+            badge.textContent = `+${data.puntos_otorgados} XP`;
+            badge.className = 'font-mono-code text-xs font-bold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300';
+        } else {
+            header.className = 'px-6 py-4 border-b border-rose-500/40 bg-rose-950/60 flex items-center justify-between';
+            icon.textContent = '✖';
+            title.textContent = data.expiro_tiempo
+                ? 'Incorrecto (Tiempo Expirado - Flujo 1a)'
+                : 'Respuesta Incorrecta';
+            title.className = 'text-lg font-bold text-rose-300';
+            badge.textContent = `${data.puntos_otorgados} XP`;
+            badge.className = 'font-mono-code text-xs font-bold px-2.5 py-1 rounded bg-rose-500/20 text-rose-300';
+        }
+
+        theoryBox.textContent = data.explicacion_teorica;
+        timestampEl.textContent = `Guardado: ${data.marca_tiempo}`;
+        modal.classList.remove('hidden');
+
+        // Excepcion 4a (CU-02): Si no cargo la teoria, el boton de confirmacion se mantiene habilitado
+        if (!data.explicacion_disponible || data.tiempo_espera_seg <= 0) {
+            waitNotice.textContent = 'Excepción 4a registrada en bitácora';
+            btnContinuar.disabled = false;
+            btnContinuar.textContent = 'Confirmar y Continuar';
+            return;
+        }
+
+        // Flujo Alternativo 5a (CU-02 / REQ-FUNC-02.4): Cuenta regresiva obligatoria de N segundos
+        let segundosEspera = data.tiempo_espera_seg;
+        btnContinuar.disabled = true;
+        btnContinuar.textContent = `Lectura obligatoria (${segundosEspera}s)...`;
+        waitNotice.textContent = `Desbloqueo en ${segundosEspera}s`;
+
+        clearInterval(intervaloLecturaModal);
+        intervaloLecturaModal = setInterval(() => {
+            segundosEspera -= 1;
+            if (segundosEspera > 0) {
+                btnContinuar.textContent = `Lectura obligatoria (${segundosEspera}s)...`;
+                waitNotice.textContent = `Desbloqueo en ${segundosEspera}s`;
+            } else {
+                clearInterval(intervaloLecturaModal);
+                btnContinuar.disabled = false;
+                btnContinuar.textContent = 'Confirmar y Continuar →';
+                waitNotice.textContent = 'Lectura completada';
+            }
+        }, 1000);
+    }
+
+    function avanzarSiguientePregunta() {
+        document.getElementById('feedback-modal-backdrop').classList.add('hidden');
+        indiceActual += 1;
+        renderizarPreguntaActual();
+    }
+
+    renderizarPreguntaActual();
+</script>
+{% endblock %}
