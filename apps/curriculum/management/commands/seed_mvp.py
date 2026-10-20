@@ -91,9 +91,8 @@ class Command(BaseCommand):
                     titulo_concepto="1. Requerimientos Funcionales (RF)",
                     contenido=(
                         "Definen QUÉ debe hacer el sistema: los comportamientos, servicios o "
-                        "funciones específicas que el software ejecutará ante determinadas entradas "
-                        "(Wiegers & Beatty, 2013). Ejemplo: 'El encargado debe poder descargar el "
-                        "registro de fallas en formato PDF'."
+                        "funciones específicas que el software ejecutará ante determinadas entradas. "
+                        "Ejemplo: 'El encargado debe poder descargar el registro de fallas en formato PDF'."
                     ),
                 ),
                 Teoria(
@@ -117,11 +116,29 @@ class Command(BaseCommand):
                 ),
                 Teoria(
                     id_tema=tema_bd,
-                    titulo_concepto="1. Propiedades ACID e Índices en PostgreSQL",
+                    titulo_concepto="1. ¿Qué es una Base de Datos Relacional?",
                     contenido=(
-                        "Una transacción garantiza Atomicidad, Consistencia, Aislamiento y Durabilidad. "
-                        "El uso de índices B-Tree y compuestos evita escaneos secuenciales (Seq Scan) "
-                        "en consultas frecuentes como la validación de sesiones o el historial de puntos."
+                        "Es un sistema que organiza y almacena la información en tablas formadas por filas "
+                        "(registros) y columnas (atributos o campos). Permite guardar, consultar y actualizar "
+                        "datos de manera ordenada evitando que la información se repita."
+                    ),
+                ),
+                Teoria(
+                    id_tema=tema_bd,
+                    titulo_concepto="2. Llave Primaria (PK) y Llave Foránea (FK)",
+                    contenido=(
+                        "La Llave Primaria (Primary Key) es un dato único que identifica a cada registro de una "
+                        "tabla (por ejemplo, el ID de un estudiante). La Llave Foránea (Foreign Key) es un campo "
+                        "que apunta a la llave primaria de otra tabla para relacionar la información entre sí."
+                    ),
+                ),
+                Teoria(
+                    id_tema=tema_bd,
+                    titulo_concepto="3. Diagramas Entidad-Relación (ER)",
+                    contenido=(
+                        "Son diagramas que representan gráficamente cómo se conectan los datos de un sistema. "
+                        "Utilizan Entidades (objetos como Usuario o Materia), Atributos (sus propiedades) y "
+                        "Relaciones (uno a uno, uno a muchos o muchos a muchos) para diseñar la base de datos."
                     ),
                 ),
                 Teoria(
@@ -149,7 +166,7 @@ class Command(BaseCommand):
         reto_cu01 = Reto.objects.create(
             id_tema=tema_req,
             tipo="CLASIFICACION",
-            titulo="CU-01: Clasificación de Requerimientos del Sistema Municipal",
+            titulo="Clasificación de Requerimientos del Sistema Municipal",
             descripcion=(
                 "Arrastra cada descripción del proyecto ficticio hacia el contenedor "
                 "'Funcionales' o 'No Funcionales' según corresponda y evalúa tu clasificación."
@@ -203,7 +220,7 @@ class Command(BaseCommand):
         reto_cu02 = Reto.objects.create(
             id_tema=tema_req,
             tipo="PREGUNTA",
-            titulo="CU-02: Evaluación de Ingeniería de Software y Arquitectura",
+            titulo="Evaluación de Ingeniería de Software y Arquitectura",
             descripcion=(
                 "Responde cada reactivo antes de que expire el temporizador. Al enviar tu "
                 "respuesta se desplegará la retroalimentación teórica obligatoria."

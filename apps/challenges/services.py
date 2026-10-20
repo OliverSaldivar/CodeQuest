@@ -70,18 +70,31 @@ class EvaluationService:
                 ),
             }
 
+        limite_recompensas = GamificationService.ha_alcanzado_limite_recompensas(
+            estudiante=estudiante,
+            reto=reto,
+        )
+        puntos_otorgados = 0 if limite_recompensas else reto.puntos_maximos
+
         puntaje_actualizado = GamificationService.registrar_variacion_puntos(
             estudiante=estudiante,
             reto=reto,
             variacion_puntos=reto.puntos_maximos,
         )
 
+        mensaje_exito = (
+            "¡Clasificación perfecta! Ya has completado esta actividad el máximo de 5 veces con recompensa, por lo que no se otorgan puntos adicionales."
+            if limite_recompensas
+            else "¡Clasificación perfecta! Has dominado la distinción entre requerimientos funcionales y no funcionales."
+        )
+
         return {
             "es_correcto": True,
             "ids_incorrectos": [],
-            "puntos_otorgados": reto.puntos_maximos,
+            "puntos_otorgados": puntos_otorgados,
+            "limite_recompensas_alcanzado": limite_recompensas,
             "puntaje_total": puntaje_actualizado,
-            "mensaje": "¡Clasificación perfecta! Has dominado la distinción entre requerimientos funcionales y no funcionales.",
+            "mensaje": mensaje_exito,
         }
 
     @staticmethod
@@ -119,16 +132,23 @@ class EvaluationService:
             if opcion_elegida and opcion_elegida.es_correcta:
                 es_respuesta_correcta = True
 
-        variacion_puntos = (
-            PUNTOS_PREGUNTA_CORRECTA
-            if es_respuesta_correcta
-            else PENALIZACION_PREGUNTA_INCORRECTA
+        limite_recompensas = (
+            es_respuesta_correcta
+            and GamificationService.ha_alcanzado_limite_recompensas(
+                estudiante=estudiante,
+                reto=reto,
+            )
         )
+
+        if es_respuesta_correcta:
+            variacion_puntos = 0 if limite_recompensas else PUNTOS_PREGUNTA_CORRECTA
+        else:
+            variacion_puntos = PENALIZACION_PREGUNTA_INCORRECTA
 
         puntaje_total = GamificationService.registrar_variacion_puntos(
             estudiante=estudiante,
             reto=reto,
-            variacion_puntos=variacion_puntos,
+            variacion_puntos=PUNTOS_PREGUNTA_CORRECTA if es_respuesta_correcta else PENALIZACION_PREGUNTA_INCORRECTA,
         )
 
         texto_explicacion = (pregunta.explicacion_teorica or "").strip()

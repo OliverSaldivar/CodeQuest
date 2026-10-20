@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Matriz Neuronal de Habilidades | CodeQuest{% endblock %}
+{% block title %}Módulos de Aprendizaje | CodeQuest{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-6 py-8">
@@ -10,9 +10,9 @@
             <span class="text-xs font-mono-code uppercase px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
                 Plan de Estudios Estructurado
             </span>
-            <h1 class="text-2xl sm:text-3xl font-bold text-white mt-2">Matriz Neuronal de Ingeniería de Software</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold text-white mt-2">Módulos de Ingeniería de Software</h1>
             <p class="text-slate-400 text-sm mt-1">
-                Consulta la base teórica de cada módulo (CU-03) antes de iniciar los retos de evaluación interactiva (CU-01 y CU-02).
+                Consulta la base teórica de cada módulo antes de iniciar los retos de evaluación interactiva.
             </p>
         </div>
 
@@ -101,12 +101,12 @@
                             {% if reto.tipo == 'CLASIFICACION' %}
                                 <a href="{% url 'classification_challenge_view' reto.id_reto %}"
                                    class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs font-mono-code transition shrink-0">
-                                    Iniciar CU-01 →
+                                    Iniciar
                                 </a>
                             {% else %}
                                 <a href="{% url 'question_challenge_view' reto.id_reto %}"
                                    class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs font-mono-code transition shrink-0">
-                                    Iniciar CU-02 →
+                                    Iniciar
                                 </a>
                             {% endif %}
                         </div>
@@ -116,18 +116,6 @@
                         </p>
                     {% endfor %}
                 </div>
-            </div>
-
-            <div class="mt-5 pt-3 border-t border-slate-800/60 flex items-center justify-between text-[11px] font-mono-code text-slate-500">
-                <span>CU-03: Consultar Teoría del Tema</span>
-                <button
-                    type="button"
-                    onclick="abrirModalTeoria({{ tema.id_tema }}, true)"
-                    class="text-amber-400/80 hover:text-amber-300 underline"
-                    title="Prueba el flujo de Excepción 2a del CU-03"
-                >
-                    Probar Excepción 2a (Falla BD)
-                </button>
             </div>
         </div>
         {% endfor %}
@@ -147,7 +135,7 @@
         <!-- Encabezado fijo con boton de cierre siempre visible en esquina superior derecha (NF-05) -->
         <div class="px-6 py-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
             <div>
-                <span class="text-xs font-mono-code uppercase text-indigo-400">Base de Conocimiento Teórico (CU-03)</span>
+                <span class="text-xs font-mono-code uppercase text-indigo-400">Base de Conocimiento Teórico</span>
                 <h3 id="modal-teoria-titulo" class="text-xl font-bold text-white">Cargando teoría...</h3>
             </div>
             <button

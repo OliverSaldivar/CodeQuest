@@ -8,10 +8,32 @@ from django.db.models import Sum
 from apps.accounts.models import Estudiante
 from apps.challenges.models import Reto
 from apps.gamification.models import Insignia, InsigniaObtenida, RegistroPuntos
+from apps.gamification.rules import MAX_RECOMPENSAS_POR_RETO
 
 
 class GamificationService:
-    """Orquesta la asignacion de puntos e insignias dentro de transacciones seguras."""
+    """Orquesta la asignacion de puntos e insignias dentro de transacciones seguras (CU-07)."""
+
+    @staticmethod
+    def contar_recompensas_reto(estudiante: Estudiante, reto: Reto) -> int:
+        """Cuenta cuantas veces el estudiante ha obtenido puntos de experiencia en un mismo reto."""
+        return RegistroPuntos.objects.filter(
+            id_estudiante=estudiante,
+            id_reto=reto,
+            variacion_puntos__gt=0,
+        ).count()
+
+    @staticmethod
+    def ha_alcanzado_limite_recompensas(estudiante: Estudiante, reto: Reto) -> bool:
+        """Verifica si el estudiante ya alcanzo el limite de 5 recompensas en el reto o actividad."""
+        unidades_por_actividad = (
+            max(1, reto.preguntas.count()) if reto.tipo == "PREGUNTA" else 1
+        )
+        limite_total = MAX_RECOMPENSAS_POR_RETO * unidades_por_actividad
+        return (
+            GamificationService.contar_recompensas_reto(estudiante, reto)
+            >= limite_total
+        )
 
     @staticmethod
     @transaction.atomic
@@ -22,7 +44,13 @@ class GamificationService:
     ) -> int:
         """
         Guarda un movimiento de puntos (positivo o penalizacion) y retorna el puntaje total.
+        Si el reto ya otorgo puntos 5 veces al estudiante, no suma experiencia adicional.
         """
+        if variacion_puntos > 0 and GamificationService.ha_alcanzado_limite_recompensas(
+            estudiante, reto
+        ):
+            return GamificationService.obtener_puntaje_total(estudiante)
+
         RegistroPuntos.objects.create(
             id_estudiante=estudiante,
             id_reto=reto,

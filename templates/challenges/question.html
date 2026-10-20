@@ -8,7 +8,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 bg-slate-900 border border-slate-800 rounded-2xl p-5">
         <div>
             <a href="{% url 'skill_tree_view' %}" class="text-xs font-mono-code text-cyan-400 hover:underline">
-                ← Volver a la Matriz Neuronal
+                ← Volver al Menú Principal
             </a>
             <h1 class="text-xl sm:text-2xl font-bold text-white mt-1">{{ reto.titulo }}</h1>
             <p class="text-xs font-mono-code text-slate-400 mt-0.5">
@@ -29,12 +29,7 @@
 
         <div id="options-container" class="space-y-3"></div>
 
-        <div class="mt-8 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
-            <label class="flex items-center gap-2 text-xs font-mono-code text-amber-400 cursor-pointer">
-                <input type="checkbox" id="chk-simular-excepcion-4a" class="rounded bg-slate-950 border-slate-700">
-                Simular Excepción 4a (Falla de carga de texto teórico / Bitácora)
-            </label>
-
+        <div class="mt-8 pt-4 border-t border-slate-800 flex items-center justify-end">
             <button
                 type="button"
                 id="btn-confirmar-respuesta"
@@ -51,10 +46,10 @@
         <div class="text-4xl mb-3">🏆</div>
         <h2 class="text-2xl font-bold text-white">¡Secuencia de Evaluación Completada!</h2>
         <p class="text-slate-400 text-sm mt-2">
-            Todas tus respuestas, marcas de tiempo y variaciones de puntaje han sido registradas en PostgreSQL.
+            Todas tus respuestas, marcas de tiempo y variaciones de puntaje han sido registradas.
         </p>
         <a href="{% url 'skill_tree_view' %}" class="inline-block mt-6 px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm font-mono-code transition">
-            Volver a la Matriz Neuronal
+            Volver al Menú Principal
         </a>
     </div>
 </div>
@@ -189,7 +184,7 @@
         document.querySelectorAll('.option-btn').forEach((btn) => { btn.disabled = true; });
 
         const pregunta = preguntas[indiceActual];
-        const simularFallaTeoria = document.getElementById('chk-simular-excepcion-4a').checked;
+        const simularFallaTeoria = false;
 
         const response = await fetch("{% url 'evaluate_question_api' reto.id_reto %}", {
             method: 'POST',
@@ -223,7 +218,9 @@
             icon.textContent = '✔';
             title.textContent = 'Respuesta Correcta';
             title.className = 'text-lg font-bold text-emerald-300';
-            badge.textContent = `+${data.puntos_otorgados} XP`;
+            badge.textContent = data.puntos_otorgados === 0
+                ? '+0 XP (Límite de 5 veces alcanzado)'
+                : `+${data.puntos_otorgados} XP`;
             badge.className = 'font-mono-code text-xs font-bold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300';
         } else {
             header.className = 'px-6 py-4 border-b border-rose-500/40 bg-rose-950/60 flex items-center justify-between';
